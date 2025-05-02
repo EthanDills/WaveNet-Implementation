@@ -68,12 +68,12 @@ class WaveNetModel(nn.Module):
                                     bias=bias)
 
         for b in range(blocks):
-            print("* * * * * * * * * * * *")
-            print(f"in block {b}")
+            # print("* * * * * * * * * * * *")
+            # print(f"in block {b+1}")
             additional_scope = kernel_size - 1
             new_dilation = 1
             for i in range(layers):
-                print(f"in layer {i}")
+                # print(f"in layer {i}")
                 # dilations of this layer
                 self.dilations.append((new_dilation, init_dilation))
 
@@ -107,7 +107,7 @@ class WaveNetModel(nn.Module):
                                                  bias=bias))
 
                 receptive_field += additional_scope
-                print("receptive field: ", receptive_field)
+                # print("receptive field: ", receptive_field)
                 additional_scope *= 2
                 init_dilation = new_dilation
                 new_dilation *= 2
@@ -175,7 +175,7 @@ class WaveNetModel(nn.Module):
         return x
 
     def wavenet_dilate(self, input, dilation, init_dilation, i):
-        print("wavenet_dilate() called")
+        # print("wavenet_dilate() called")
         x = dilate(input, dilation, init_dilation)
         return x
 
@@ -189,9 +189,9 @@ class WaveNetModel(nn.Module):
         return x
 
     def forward(self, input):
-        print("forward() called")
+        # print("forward() called")
         x = self.wavenet(input, dilation_func=self.wavenet_dilate) # this seems to be throwing the error
-        print("after x is defined")
+        # print("after x is defined")
         # reshape output
         [n, c, l] = x.size()
         l = self.output_length
