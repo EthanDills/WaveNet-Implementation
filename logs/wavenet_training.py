@@ -65,13 +65,12 @@ class WavenetTrainer:
             count = 1
             for (x, target) in iter(self.dataloader): # this is each batch
                 if count % 250 == 0:
-                    print("On batch number:", counts, "of", len(self.dataloader))
+                    print(f"On batch number:", counts)
                 x = Variable(x.type(self.dtype))
                 target = Variable(target.view(-1).type(self.ltype))
 
-                # print("model() called")
-                
-                output = self.model(x).to("cuda")
+                print("model() called")
+                output = self.model(x)
                 loss = F.cross_entropy(output.squeeze(), target.squeeze())
                 self.optimizer.zero_grad()
                 loss.backward()
@@ -94,7 +93,7 @@ class WavenetTrainer:
                         continue
                     time_string = time.strftime("%Y-%m-%d_%H-%M-%S", time.gmtime())
                     torch.save(self.model, self.snapshot_path + '/' + self.snapshot_name + '_' + time_string)
-                # print("step is:")
+
                 self.logger.log(step, loss)
 
     def validate(self):
