@@ -131,7 +131,7 @@ class ConstantPad1d(Function):
         ctx.target_size = target_size
 
         num_pad = target_size - input.size(dimension)
-        assert num_pad >= 0, "target size must be >= input size"
+        assert num_pad >= 0, "target size has to be greater than input size"
 
         # Create padded tensor
         size = list(input.size())
@@ -154,7 +154,7 @@ class ConstantPad1d(Function):
             grad_output = grad_output.narrow(ctx.dimension, 0, ctx.input_size[ctx.dimension])
 
         grad_input.copy_(grad_output)
-        return grad_input, None, None, None, None  # one gradient per forward argument
+        return grad_input, None, None, None, None 
 
 
 def constant_pad_1d(input,

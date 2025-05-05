@@ -71,8 +71,10 @@ class TensorboardLogger(Logger):
                  log_dir='logs'):
         super().__init__(log_interval, validation_interval, generate_interval, trainer, generate_function)
         print(tf.__version__)
-        # self.writer = tf.summary.FileWriter(log_dir) #FileWriter throws AttributeError
-        self.writer = tf.summary.create_file_writer(log_dir)
+        tf.compat.v1.disable_eager_execution() # so that we may use tf 1.x objects.
+        # NOTE: whenever calling a tf.summary 1.x object, we need to instead call tf.compat.v1.summary
+        self.writer = tf.compat.v1.summary.FileWriter(log_dir) #FileWriter throws AttributeError
+        # self.writer = tf.summary.create_file_writer(log_dir)
 
     def log_loss(self, current_step):
         # loss
@@ -99,6 +101,11 @@ class TensorboardLogger(Logger):
 
     def scalar_summary(self, tag, value, step):
         """Log a scalar variable."""
+        # here is the TensorFlow 2.x version
+        # with self.writer.as_default():
+        #     tf.summary.scalar(tag, value, step=step) 
+
+        
         tf.compat.v1.disable_eager_execution() # need to enable this so that old versions of graphs & charts will work
         summary = tf.compat.v1.Summary(value=[tf.compat.v1.Summary.Value(tag=tag, simple_value=value)])
         self.writer.add_summary(summary, step)
@@ -140,8 +147,11 @@ class TensorboardLogger(Logger):
         # Create a histogram using numpy
         counts, bin_edges = np.histogram(values, bins=bins)
 
+        tf.compat.v1.disable_eager_execution()
+
+        
         # Fill the fields of the histogram proto
-        hist = tf.HistogramProto()
+        hist = tf.compat.v1.HistogramProto()
         hist.min = float(np.min(values))
         hist.max = float(np.max(values))
         hist.num = int(np.prod(values.shape))
@@ -158,7 +168,7 @@ class TensorboardLogger(Logger):
             hist.bucket.append(c)
 
         # Create and write Summary
-        summary = tf.Summary(value=[tf.Summary.Value(tag=tag, histo=hist)])
+        summary = tf.compat.v1.Summary(value=[tf.compat.v1.Summary.Value(tag=tag, histo=hist)])
         self.writer.add_summary(summary, step)
         self.writer.flush()
 

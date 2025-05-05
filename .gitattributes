@@ -1,0 +1,2 @@
+snapshots/* filter=lfs diff=lfs merge=lfs -text
+logs/model/* filter=lfs diff=lfs merge=lfs -text

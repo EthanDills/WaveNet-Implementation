@@ -2,6 +2,7 @@ import torch
 import torch.optim as optim
 import torch.utils.data
 import time
+import os
 from datetime import datetime
 import torch.nn.functional as F
 from torch.autograd import Variable
@@ -62,10 +63,9 @@ class WavenetTrainer:
         for current_epoch in range(epochs): # this is each epoch
             print("epoch", current_epoch)
             tic = time.time()
-            count = 1
             for (x, target) in iter(self.dataloader): # this is each batch
-                if count % 250 == 0:
-                    print("On batch number:", counts, "of", len(self.dataloader))
+                if step % 250 == 0:
+                    print("On batch number:", step, "of", len(self.dataloader))
                 x = Variable(x.type(self.dtype))
                 target = Variable(target.view(-1).type(self.ltype))
 
@@ -93,6 +93,8 @@ class WavenetTrainer:
                     if self.snapshot_path is None:
                         continue
                     time_string = time.strftime("%Y-%m-%d_%H-%M-%S", time.gmtime())
+                    # if the path doesn't exist, create the path
+                    
                     torch.save(self.model, self.snapshot_path + '/' + self.snapshot_name + '_' + time_string)
                 # print("step is:")
                 self.logger.log(step, loss)
@@ -108,11 +110,11 @@ class WavenetTrainer:
 
             output = self.model(x)
             loss = F.cross_entropy(output.squeeze(), target.squeeze())
-            total_loss += loss.data[0]
+            total_loss += loss.item()  # loss.data[0] this is the old pytorch version
 
             predictions = torch.max(output, 1)[1].view(-1)
             correct_pred = torch.eq(target, predictions)
-            accurate_classifications += torch.sum(correct_pred).data[0]
+            accurate_classifications += torch.sum(correct_pred).item() # torch.sum(correct_pred).data[0] old pytorch version
         # print("validate model with " + str(len(self.dataloader.dataset)) + " samples")
         # print("average loss: ", total_loss / len(self.dataloader))
         avg_loss = total_loss / len(self.dataloader)

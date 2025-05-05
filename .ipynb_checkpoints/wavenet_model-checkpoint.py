@@ -181,7 +181,7 @@ class WaveNetModel(nn.Module):
 
     def queue_dilate(self, input, dilation, init_dilation, i):
         queue = self.dilated_queues[i]
-        queue.enqueue(input.data[0])
+        queue.enqueue(input.data[0].squeeze(-1))
         x = queue.dequeue(num_deq=self.kernel_size,
                           dilation=dilation)
         x = x.unsqueeze(0)
@@ -250,7 +250,7 @@ class WaveNetModel(nn.Module):
         self.eval()
         if first_samples is None:
             first_samples = torch.LongTensor(1).zero_() + (self.classes // 2)
-        first_samples = Variable(first_samples)
+        first_samples = Variable(first_samples).to("cuda")
 
         # reset queues
         for queue in self.dilated_queues:
@@ -259,13 +259,12 @@ class WaveNetModel(nn.Module):
         num_given_samples = first_samples.size(0)
         total_samples = num_given_samples + num_samples
 
-        input = Variable(torch.FloatTensor(1, self.classes, 1).zero_())
-        input = input.scatter_(1, first_samples[0:1].view(1, -1, 1), 1.)
+        input = Variable(torch.FloatTensor(1, self.classes, 1).zero_()).to("cuda")
+        input = input.scatter_(1, first_samples[0:1].view(1, -1, 1), 1.).to("cuda")
 
         # fill queues with given samples
         for i in range(num_given_samples - 1):
-            x = self.wavenet(input,
-                             dilation_func=self.queue_dilate)
+            x = self.wavenet(input,dilation_func=self.queue_dilate).to("cuda")
             input.zero_()
             input = input.scatter_(1, first_samples[i + 1:i + 2].view(1, -1, 1), 1.).view(1, self.classes, 1)
 
@@ -276,12 +275,12 @@ class WaveNetModel(nn.Module):
 
         # generate new samples
         generated = np.array([])
-        regularizer = torch.pow(Variable(torch.arange(self.classes)) - self.classes / 2., 2)
+        regularizer = torch.pow(Variable(torch.arange(self.classes)) - self.classes / 2., 2).to("cuda")
         regularizer = regularizer.squeeze() * regularize
         tic = time.time()
         for i in range(num_samples):
             x = self.wavenet(input,
-                             dilation_func=self.queue_dilate).squeeze()
+                             dilation_func=self.queue_dilate).squeeze().to("cuda")
 
             x -= regularizer
 
@@ -303,7 +302,7 @@ class WaveNetModel(nn.Module):
             generated = np.append(generated, o)
 
             # set new input
-            x = Variable(torch.from_numpy(x).type(torch.LongTensor))
+            x = Variable(torch.from_numpy(x).type(torch.LongTensor)).to("cuda")
             input.zero_()
             input = input.scatter_(1, x.view(1, -1, 1), 1.).view(1, self.classes, 1)
 
@@ -334,12 +333,13 @@ class WaveNetModel(nn.Module):
 
 
 def load_latest_model_from(location, use_cuda=True):
-    files = [location + "/" + f for f in os.listdir(location)]
-    newest_file = max(files, key=os.path.getctime)
+    # files = [location + "/" + f for f in os.listdir(location)]
+    # newest_file = max(files, key=os.path.getctime)
+    newest_file = "snapshots/chaconne_model_2025-05-04_02-14-36"
     print("load model " + newest_file)
 
     if use_cuda:
-        model = torch.load(newest_file)
+        model = torch.load(newest_file, weights_only=False)
     else:
         model = load_to_cpu(newest_file)
 
